@@ -1,0 +1,44 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/images/tree/main/src/base-debian
+{
+    "name": "cennis91/setup-prebuild-env (source)",
+    "image": "ghcr.io/devcontainers/templates/debian:bookworm",
+    "features": {
+        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/EliiseS/devcontainer-features/devcontainers-cli:1": {},
+        "ghcr.io/marcozac/devcontainer-features/shellcheck:1": {}
+    },
+    "customizations": {
+        "devpod": {
+            "prebuildRepository": "ghcr.io/cennis91/setup-prebuild-env:latest"
+        },
+        "jetbrains": {
+            "plugins": [
+                "org.editorconfig.editorconfigjetbrains",
+                "org.jetbrains.plugins.github",
+                "org.jetbrains.plugins.yaml"
+            ],
+            "settings": {}
+        },
+        "vscode": {
+            "extensions": [
+                // 0.17.2+ is incompatible with VSCode forks before 1.98.0
+                "EditorConfig.EditorConfig@0.17.1",
+                "GitHub.vscode-github-actions",
+                "redhat.vscode-yaml",
+                "timonwong.shellcheck"
+            ],
+            "settings": {
+                "editor.rulers": [
+                    80,
+                    120
+                ],
+                "file.associations": {
+                    ".env*": "properties"
+                },
+                "redhat.telemetry.enabled": false
+            }
+        }
+    }
+}
