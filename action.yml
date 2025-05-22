@@ -1,17 +1,28 @@
 name: Setup Dev Container Pre-Building Environment
-description: Composite action to simplify prebuilding Dev Container images
+description: Composite action to simplify pre-building Dev Container images
 author: CEnnis91
 branding:
   color: blue
   icon: box
 
 inputs:
+  # common inputs
   cache:
     description: Cache downloaded dependencies to cache backend
     required: false
     default: 'true'
+  password:
+    description: Password or token for authenticating to the container registry
+    required: false
   platforms:
     description: Comma-separated list of platforms to build for
+    required: false
+  registry:
+    description: Server address of the container registry
+    required: false
+    default: ghcr.io
+  username:
+    description: Username for authenticating to the container registry
     required: false
 
   # setup control flags
@@ -19,12 +30,16 @@ inputs:
     description: Setup Docker using docker/setup-buildx-action
     required: false
     default: 'true'
+  setup-login:
+    description: Setup login to container registry using docker/login-action
+    required: false
+    default: 'true'
   setup-qemu:
     description: Setup QEMU via docker/setup-qemu-action for cross-platform builds
     required: false
     default: 'true'
   setup-skopeo:
-    description: Setup Skopeo by installing the skopeo package
+    description: Setup Skopeo by installing the Skopeo package
     required: false
     default: 'true'
 
@@ -79,10 +94,10 @@ outputs:
 
   # awalsh128/cache-apt-pkgs-action
   skopeo-cache-hit:
-    description: Boolean value to indicate a cache was found for skopeo packages
+    description: Boolean value to indicate a cache was found for Skopeo packages
     value: ${{ steps.skopeo-cache.outputs.cache-hit || false }}
   skopeo-package-version:
-    description: The skopeo package name and version that wasinstalled
+    description: The Skopeo package name and version that was installed
     value: ${{ steps.skopeo.outputs.version || '' }}
 
 runs:
@@ -98,6 +113,16 @@ runs:
         echo "::group::Validate OCI platform specifiers"
         ./action.sh platforms | tee -a "$GITHUB_OUTPUT"
         echo "::endgroup::"
+
+    # https://github.com/docker/login-action
+    # use 'setup-login: false' if more configuration is desired
+    - name: Login to container registry
+      if: inputs.setup-login == 'true'
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username || github.repository_owner }}
+        password: ${{ inputs.password }}
 
     # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
     - name: Setup Skopeo

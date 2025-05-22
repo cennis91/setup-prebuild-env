@@ -1,0 +1,96 @@
+name: Release GitHub Action
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: The type of the release to create
+        required: false
+        default: prerelease
+        type: choice
+        options:
+          - draft
+          - prerelease
+          - release
+          - latest
+      version:
+        description: An existing semver version tag
+        required: true
+        type: string
+
+env:
+  BOT_USER_EMAIL: ${{ vars.BOT_USER_EMAIL || '41898282+github-actions[bot]@users.noreply.github.com' }}
+  BOT_USER_NAME: ${{ vars.BOT_USER_NAME || 'github-actions[bot]' }}
+  CHANNEL: ${{ inputs.channel || vars.RELEASE_CHANNEL || 'latest' }}
+  TOKEN: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+  VERSION: ${{ inputs.version || github.ref_name }}
+
+jobs:
+  release:
+    name: Release GitHub Action
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: ${{ github.event_name == 'workflow_dispatch' }}
+
+      - name: Validate version format
+        id: semver
+        env:
+          VERSION: ${{ env.VERSION }}
+        run: |
+          echo "::group::Validate version format"
+          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              printf 'Invalid semver version format: %s\n' "$VERSION"
+              exit 1
+          fi
+
+          SEMVER="${VERSION#v}"
+          IFS='.' read -r major minor patch <<< "$SEMVER"
+          {
+              printf 'SEMVER=%s\n' "$SEMVER"
+              printf 'SEMVER_MAJOR=%s\n' "$major"
+              printf 'SEMVER_MINOR=%s\n' "$minor"
+              printf 'SEMVER_PATCH=%s\n' "$patch"
+          } | tee -a "$GITHUB_OUTPUT"
+          echo "::endgroup::"
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: ${{ github.workspace }}/CHANGELOG.md
+          draft: ${{ env.CHANNEL == 'draft' }}
+          prerelease: ${{ env.CHANNEL == 'prerelease' }}
+          name: Release ${{ env.VERSION }}
+          tag_name: ${{ env.VERSION }}
+          token: ${{ env.TOKEN }}
+          make_latest: ${{ env.CHANNEL == 'latest' }}
+
+      - name: Update latest release tags
+        if: ${{ env.CHANNEL == 'latest' }}
+        env:
+          BOT_USER_EMAIL: ${{ env.BOT_USER_EMAIL }}
+          BOT_USER_NAME: ${{ env.BOT_USER_NAME }}
+          SEMVER_MAJOR: ${{ steps.semver.outputs.SEMVER_MAJOR }}
+          SEMVER_MINOR: ${{ steps.semver.outputs.SEMVER_MINOR }}
+          SEMVER_PATCH: ${{ steps.semver.outputs.SEMVER_PATCH }}
+          VERSION: ${{ env.VERSION }}
+        run: |
+          echo "::group::Update latest release tags"
+          git config user.name "$BOT_USER_NAME"
+          git config user.email "$BOT_USER_EMAIL"
+
+          MINOR_TAG="v${SEMVER_MAJOR}.${SEMVER_MINOR}"
+          git tag -f -a "$MINOR_TAG" -m "Release $VERSION" "$VERSION^{}"
+          git push -f origin "$MINOR_TAG"
+
+          MAJOR_TAG="v${SEMVER_MAJOR}"
+          git tag -f -a "$MAJOR_TAG" -m "Release $VERSION" "$VERSION^{}"
+          git push -f origin "$MAJOR_TAG"
+          echo "::endgroup::"

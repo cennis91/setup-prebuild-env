@@ -1,0 +1,74 @@
+name: Prebuild and Publish Dev Container
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .devcontainer/**
+      - .github/workflows/prebuild.yml
+  workflow_dispatch:
+    inputs:
+      platforms:
+        description: The OCI platforms to build for
+        required: false
+      registry:
+        description: The container registry to publish to
+        required: false
+        default: ghcr.io
+      repository:
+        description: The image repository to publish to (defaults to this repository)
+        required: false
+      runs-on:
+        description: The type of machine to run the workflow on
+        required: false
+        default: ubuntu-latest
+      tag:
+        description: The container image tag to publish
+        required: false
+        default: latest
+
+env:
+  PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
+  PLATFORMS: ${{ inputs.platforms || vars.PREBUILD_PLATFORMS || 'linux/amd64,linux/arm64' }}
+  REGISTRY: ${{ inputs.registry || vars.PREBUILD_REGISTRY || 'ghcr.io' }}
+  REPOSITORY: ${{ inputs.repository || vars.PREBUILD_REPOSITORY || github.repository }}
+  TAG: ${{ inputs.tag || vars.PREBUILD_TAG || 'latest' }}
+  USERNAME: ${{ inputs.username || vars.PREBUILD_USERNAME || github.actor }}
+
+jobs:
+  prebuild-self:
+    name: Prebuild own Dev Container
+    runs-on: ${{ inputs.runs-on || vars.PREBUILD_RUNS_ON || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Prebuild Environment
+        id: setup
+        uses: ./
+        with:
+          password: ${{ env.PASSWORD }}
+          platforms: ${{ env.PLATFORMS }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+
+      - name: Prebuild and publish image
+        uses: devcontainers/ci@v0.3
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          REPOSITORY: ${{ env.REPOSITORY }}
+          TAG: ${{ env.TAG }}
+        with:
+          imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
+          imageTag: ${{ env.TAG }}
+          configFile: .devcontainer/source/devcontainer.json
+          refFilterForPush: |
+            refs/heads/main
+          eventFilterForPush: |
+            push
+            workflow_dispatch
+          platform: ${{ steps.setup.outputs.platforms }}

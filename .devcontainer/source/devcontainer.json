@@ -35,7 +35,8 @@
                     120
                 ],
                 "file.associations": {
-                    ".env*": "properties"
+                    ".env*": "properties",
+                    "*.{yml,yaml}": "github-actions-workflow"
                 },
                 "redhat.telemetry.enabled": false
             }
