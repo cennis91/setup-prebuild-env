@@ -2,7 +2,7 @@
 // README at: https://github.com/devcontainers/images/tree/main/src/base-debian
 {
     "name": "cennis91/setup-prebuild-env (source)",
-    "image": "ghcr.io/devcontainers/templates/debian:bookworm",
+    "image": "mcr.microsoft.com/devcontainers/base:bookworm",
     "features": {
         "ghcr.io/devcontainers/features/node:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},

@@ -1,0 +1,144 @@
+name: Setup Dev Container Pre-Building Environment
+description: Composite action to simplify prebuilding Dev Container images
+author: CEnnis91
+branding:
+  color: blue
+  icon: box
+
+inputs:
+  cache:
+    description: Cache downloaded dependencies to cache backend
+    required: false
+    default: 'true'
+  platforms:
+    description: Comma-separated list of platforms to build for
+    required: false
+
+  # setup control flags
+  setup-buildx:
+    description: Setup Docker using docker/setup-buildx-action
+    required: false
+    default: 'true'
+  setup-qemu:
+    description: Setup QEMU via docker/setup-qemu-action for cross-platform builds
+    required: false
+    default: 'true'
+  setup-skopeo:
+    description: Setup Skopeo by installing the skopeo package
+    required: false
+    default: 'true'
+
+  # skopeo installation configuration
+  skopeo-url:
+    description: URL of the Skopeo package to install
+    required: false
+    default: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04'
+
+  # docker/setup-buildx-action
+  buildx-version:
+    description: Version of Buildx to install
+    required: false
+
+  # docker/setup-qemu-action
+  qemu-image:
+    description: QEMU static binaries Docker image
+    required: false
+
+outputs:
+  needs-cross:
+    description: Boolean value to indicate cross-platform builds are needed
+    value: ${{ steps.platforms.outputs.NEEDS_CROSS }}
+  platforms:
+    description: Comma-separated list of all OCI platform specifiers to build
+    value: ${{ steps.platforms.outputs.PLATFORMS_ALL }}
+  platforms-cross:
+    description: Comma-separated list of non-native OCI platform specifiers to build
+    value: ${{ steps.platforms.outputs.PLATFORMS_CROSS }}
+  platforms-native:
+    description: Comma-separated list of native OCI platform specifiers to build
+    value: ${{ steps.platforms.outputs.PLATFORMS_NATIVE }}
+
+  # docker/setup-buildx-action
+  buildx-driver:
+    description: Docker Buildx builder driver
+    value: ${{ steps.buildx.outputs.driver || '' }}
+  buildx-name:
+    description: Docker Buildx builder name
+    value: ${{ steps.buildx.outputs.name || '' }}
+  buildx-nodes:
+    description: Docker Buildx builder nodes metadata
+    value: ${{ steps.buildx.outputs.nodes || '' }}
+  buildx-platforms:
+    description: Docker Buildx builder node platforms (preferred and/or available)
+    value: ${{ steps.buildx.outputs.platforms || '' }}
+
+  # docker/setup-qemu-action
+  qemu-platforms:
+    description: QEMU available platforms (comma separated)
+    value: ${{ steps.qemu.outputs.platforms || '' }}
+
+  # awalsh128/cache-apt-pkgs-action
+  skopeo-cache-hit:
+    description: Boolean value to indicate a cache was found for skopeo packages
+    value: ${{ steps.skopeo-cache.outputs.cache-hit || false }}
+  skopeo-package-version:
+    description: The skopeo package name and version that wasinstalled
+    value: ${{ steps.skopeo.outputs.version || '' }}
+
+runs:
+  using: composite
+  steps:
+    - name: Validate OCI platform specifiers
+      id: platforms
+      shell: bash
+      working-directory: ./src
+      env:
+        INPUT_PLATFORMS: ${{ inputs.platforms }}
+      run: |
+        echo "::group::Validate OCI platform specifiers"
+        ./action.sh platforms | tee -a "$GITHUB_OUTPUT"
+        echo "::endgroup::"
+
+    # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
+    - name: Setup Skopeo
+      if: inputs.setup-skopeo == 'true'
+      id: skopeo
+      shell: bash
+      working-directory: ./src
+      env:
+        INPUT_CACHE: ${{ inputs.cache }}
+        INPUT_SKOPEO_URL: ${{ inputs.skopeo-url }}
+      run: |
+        echo "::group::Setup Skopeo"
+        ./action.sh skopeo
+        echo "::endgroup::"
+
+    # https://github.com/awalsh128/cache-apt-pkgs-action
+    - name: Cache Skopeo packages
+      if: inputs.setup-skopeo == 'true' && inputs.cache == 'true'
+      id: skopeo-cache
+      uses: awalsh128/cache-apt-pkgs-action@latest
+      with:
+        packages: skopeo
+        version: 1.0
+
+    # https://github.com/docker/setup-qemu-action
+    - name: Setup QEMU for cross-platform building
+      if: inputs.setup-qemu == 'true' && steps.platforms.outputs.NEEDS_CROSS == 'true'
+      id: qemu
+      uses: docker/setup-qemu-action@v3
+      with:
+        image: ${{ inputs.qemu-image }}
+        cache-image: ${{ inputs.cache }}
+        platforms: ${{ steps.platforms.outputs.PLATFORMS_CROSS }}
+
+    # https://github.com/docker/setup-buildx-action
+    # use 'setup-buildx: false' if more configuration is desired
+    - name: Setup Docker Buildx for building
+      if: inputs.setup-buildx == 'true'
+      id: buildx
+      uses: docker/setup-buildx-action@v3
+      with:
+        version: ${{ inputs.buildx-version }}
+        platforms: ${{ steps.platforms.outputs.PLATFORMS_ALL }}
+        cache-binary: ${{ inputs.cache }}
