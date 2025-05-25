@@ -78,7 +78,7 @@ jobs:
 If more control is needed for one or more of the steps, the action supports disabling that step entirely by setting the `setup-*` inputs to `false`.
 
 ```yaml
-name: build
+name: build with custom buildx
 on:
   push:
     branches:
