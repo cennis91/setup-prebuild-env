@@ -58,7 +58,7 @@ jobs:
           imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi
           configFile: .devcontainer/source/devcontainer.json
           push: ${{ env.PUSH || 'always' }}
-          platforms: ${{ steps.setup.outputs.platforms }}
+          platform: ${{ steps.setup.outputs.platforms }}
 ```
 
 ### Advanced configuration
@@ -100,7 +100,7 @@ jobs:
           imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/advanced
           configFile: .devcontainer/source/devcontainer.json
           push: ${{ env.PUSH || 'always' }}
-          platforms: ${{ steps.setup.outputs.platforms }}
+          platform: ${{ steps.setup.outputs.platforms }}
 ```
 
 ## Customizing
