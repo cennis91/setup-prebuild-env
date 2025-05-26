@@ -10,6 +10,7 @@ on:
 env:
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
   PLATFORMS: ${{ vars.PREBUILD_PLATFORMS || 'linux/amd64,linux/arm64' }}
+  PUSH: ${{ vars.PREBUILD_PUSH || 'filter' }}
   REGISTRY: ${{ vars.PREBUILD_REGISTRY || 'ghcr.io' }}
   REPOSITORY: ${{ vars.PREBUILD_REPOSITORY || github.repository }}
   USERNAME: ${{ vars.PREBUILD_USERNAME || github.repository_owner }}
@@ -38,12 +39,14 @@ jobs:
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         env:
+          PUSH: ${{ env.PUSH }}
           REGISTRY: ${{ env.REGISTRY }}
           REPOSITORY: ${{ env.REPOSITORY }}
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
           imageTag: latest
           configFile: .devcontainer/source/devcontainer.json
+          push: ${{ env.PUSH }}
           refFilterForPush: refs/heads/main
           eventFilterForPush: push
           platform: ${{ steps.setup.outputs.platforms }}
