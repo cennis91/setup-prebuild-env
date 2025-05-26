@@ -1,0 +1,93 @@
+name: Run Examples
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - .github/workflows/examples.yml
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/examples.yml
+
+# NOTE: These environment variables are NOT considered part of the examples.
+# They are only used to help cut down on building and pushing duplicate images.
+env:
+  PUSH: ${{ vars.EXAMPLES_PUSH || 'never' }}
+  REGISTRY: ${{ vars.EXAMPLES_REGISTRY || 'ghcr.io' }}
+
+jobs:
+  simple:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Prebuild Environment
+        uses: cennis91/setup-prebuild-env@v1
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prebuild and Publish Image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/simple
+          configFile: .devcontainer/source/devcontainer.json
+          push: ${{ env.PUSH || 'always' }}
+
+  multi:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Prebuild Environment
+        id: setup
+        uses: cennis91/setup-prebuild-env@v1
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          platforms: linux/amd64,linux/arm64
+
+      - name: Prebuild and Publish Image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi
+          configFile: .devcontainer/source/devcontainer.json
+          push: ${{ env.PUSH || 'always' }}
+          platforms: ${{ steps.setup.outputs.platforms }}
+
+  advanced:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Prebuild Environment
+        id: setup
+        uses: cennis91/setup-prebuild-env@v1
+        with:
+          password: ${{ secrets.GITHUB_TOKEN }}
+          platforms: linux/amd64,linux/arm64
+          setup-buildx: false
+          setup-qemu: false
+
+      - name: Setup QEMU (Manually without cache)
+        uses: docker/setup-qemu-action@v3
+        with:
+          cache-image: false
+          platforms: ${{ steps.setup.outputs.platforms }}
+
+      - name: Setup Buildx (Manually with debug)
+        uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
+          platforms: ${{ steps.setup.outputs.platforms }}
+
+      - name: Prebuild and Publish Image
+        uses: devcontainers/ci@v0.3
+        with:
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/advanced
+          configFile: .devcontainer/source/devcontainer.json
+          push: ${{ env.PUSH || 'always' }}
+          platforms: ${{ steps.setup.outputs.platforms }}

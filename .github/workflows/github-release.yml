@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       channel:
-        description: The type of the release to create
+        description: Type of release to create
         required: false
         default: prerelease
         type: choice
@@ -16,7 +16,7 @@ on:
           - release
           - latest
       version:
-        description: An existing semver version tag
+        description: Existing semver version tag to release
         required: true
         type: string
 
@@ -28,7 +28,7 @@ env:
   VERSION: ${{ inputs.version || github.ref_name }}
 
 jobs:
-  release:
+  github-release:
     name: Release GitHub Action
     runs-on: ubuntu-latest
     permissions:
@@ -40,26 +40,37 @@ jobs:
         with:
           fetch-tags: ${{ github.event_name == 'workflow_dispatch' }}
 
-      - name: Validate version format
+      - name: Configure Bot User
+        env:
+          BOT_USER_EMAIL: ${{ env.BOT_USER_EMAIL }}
+          BOT_USER_NAME: ${{ env.BOT_USER_NAME }}
+        run: |
+          printf "::group::%s\n" "Configure Bot User"
+          git config user.name "$BOT_USER_NAME"
+          git config user.email "$BOT_USER_EMAIL"
+          printf "::endgroup::\n"
+
+      - name: Validate Version Format
         id: semver
         env:
           VERSION: ${{ env.VERSION }}
         run: |
-          echo "::group::Validate version format"
-          if [[ ! "$VERSION" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-              printf 'Invalid semver version format: %s\n' "$VERSION"
+          printf "::group::%s\n" "Validate Version Format"
+          if ! echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
+              printf "Invalid semver version format: %s\n" "$VERSION" 1>&2
               exit 1
           fi
 
           SEMVER="${VERSION#v}"
-          IFS='.' read -r major minor patch <<< "$SEMVER"
+          IFS="." read -r major minor patch <<-END
+              $SEMVER
+          END
           {
-              printf 'SEMVER=%s\n' "$SEMVER"
-              printf 'SEMVER_MAJOR=%s\n' "$major"
-              printf 'SEMVER_MINOR=%s\n' "$minor"
-              printf 'SEMVER_PATCH=%s\n' "$patch"
+              printf 'MAJOR_TAG=%s\n' "v${major}"
+              printf 'MINOR_TAG=%s\n' "v${major}.${minor}"
+              printf 'RELEASE_TAG=%s\n' "v${SEMVER}"
           } | tee -a "$GITHUB_OUTPUT"
-          echo "::endgroup::"
+          printf "::endgroup::\n"
 
       - name: Create release
         uses: softprops/action-gh-release@v2
@@ -67,30 +78,22 @@ jobs:
           body_path: ${{ github.workspace }}/CHANGELOG.md
           draft: ${{ env.CHANNEL == 'draft' }}
           prerelease: ${{ env.CHANNEL == 'prerelease' }}
-          name: Release ${{ env.VERSION }}
-          tag_name: ${{ env.VERSION }}
+          name: Release ${{ steps.semver.outputs.RELEASE_TAG }}
+          tag_name: ${{ steps.semver.outputs.RELEASE_TAG }}
           token: ${{ env.TOKEN }}
           make_latest: ${{ env.CHANNEL == 'latest' }}
 
-      - name: Update latest release tags
+      - name: Update Latest Release Tags
         if: ${{ env.CHANNEL == 'latest' }}
         env:
-          BOT_USER_EMAIL: ${{ env.BOT_USER_EMAIL }}
-          BOT_USER_NAME: ${{ env.BOT_USER_NAME }}
-          SEMVER_MAJOR: ${{ steps.semver.outputs.SEMVER_MAJOR }}
-          SEMVER_MINOR: ${{ steps.semver.outputs.SEMVER_MINOR }}
-          SEMVER_PATCH: ${{ steps.semver.outputs.SEMVER_PATCH }}
-          VERSION: ${{ env.VERSION }}
+          MAJOR_TAG: ${{ steps.semver.outputs.MAJOR_TAG }}
+          MINOR_TAG: ${{ steps.semver.outputs.MINOR_TAG }}
+          RELEASE_TAG: ${{ steps.semver.outputs.RELEASE_TAG }}
         run: |
-          echo "::group::Update latest release tags"
-          git config user.name "$BOT_USER_NAME"
-          git config user.email "$BOT_USER_EMAIL"
-
-          MINOR_TAG="v${SEMVER_MAJOR}.${SEMVER_MINOR}"
-          git tag -f -a "$MINOR_TAG" -m "Release $VERSION" "$VERSION^{}"
+          printf "::group::%s\n" "Update latest release tags"
+          git tag -f -a "$MINOR_TAG" -m "Release $RELEASE_TAG" "${RELEASE_TAG}^{}"
           git push -f origin "$MINOR_TAG"
 
-          MAJOR_TAG="v${SEMVER_MAJOR}"
-          git tag -f -a "$MAJOR_TAG" -m "Release $VERSION" "$VERSION^{}"
+          git tag -f -a "$MAJOR_TAG" -m "Release $RELEASE_TAG" "${RELEASE_TAG}^{}"
           git push -f origin "$MAJOR_TAG"
-          echo "::endgroup::"
+          printf "::endgroup::\n"

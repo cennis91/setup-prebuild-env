@@ -38,6 +38,7 @@
                     ".env*": "properties",
                     "*.{yml,yaml}": "github-actions-workflow"
                 },
+				"shellcheck.useWorkspaceRootAsCwd": true,
                 "redhat.telemetry.enabled": false
             }
         }

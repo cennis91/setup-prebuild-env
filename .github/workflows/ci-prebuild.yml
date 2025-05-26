@@ -1,0 +1,49 @@
+name: Prebuild and Publish Dev Container
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .devcontainer/**
+      - .github/workflows/prebuild.yml
+
+env:
+  PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
+  PLATFORMS: ${{ vars.PREBUILD_PLATFORMS || 'linux/amd64,linux/arm64' }}
+  REGISTRY: ${{ vars.PREBUILD_REGISTRY || 'ghcr.io' }}
+  REPOSITORY: ${{ vars.PREBUILD_REPOSITORY || github.repository }}
+  USERNAME: ${{ vars.PREBUILD_USERNAME || github.repository_owner }}
+
+jobs:
+  prebuild:
+    name: Prebuild own Dev Container
+    runs-on: ${{ vars.PREBUILD_RUNS_ON || 'ubuntu-latest' }}
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Prebuild Environment
+        id: setup
+        uses: ./
+        with:
+          password: ${{ env.PASSWORD }}
+          platforms: ${{ env.PLATFORMS }}
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USERNAME }}
+
+      - name: Prebuild and Publish Image
+        uses: devcontainers/ci@v0.3
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          REPOSITORY: ${{ env.REPOSITORY }}
+        with:
+          imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
+          imageTag: latest
+          configFile: .devcontainer/source/devcontainer.json
+          refFilterForPush: refs/heads/main
+          eventFilterForPush: push
+          platform: ${{ steps.setup.outputs.platforms }}

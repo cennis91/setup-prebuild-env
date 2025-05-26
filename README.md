@@ -13,30 +13,24 @@ The following workflow is the simplest example for using this action. Using the 
 - Publish the image to the GitHub container registry.
 
 ```yaml
-name: build
-on:
-  push:
-    branches:
-      - main
-
 jobs:
-  build:
+  simple:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: setup prebuild environment
+      - name: Setup Prebuild Environment
         uses: cennis91/setup-prebuild-env@v1
         with:
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: prebuild and publish image
+      - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ghcr.io/${{ github.repository }}/devcontainer
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/simple
           configFile: .devcontainer/source/devcontainer.json
-          push: always
+          push: ${{ env.PUSH || 'always' }}
 ```
 
 ### Multi-platform images
@@ -44,32 +38,26 @@ jobs:
 The [devcontainers/ci](https://github.com/devcontainers/ci) action supports building multi-platform images, via emulation, which has [some caveats](https://github.com/devcontainers/ci/blob/main/docs/multi-platform-builds.md). This action can detect if multi-platform builds are needed using the `platforms` input.
 
 ```yaml
-name: build multi-platform
-on:
-  push:
-    branches:
-      - main
-
 jobs:
-  build:
+  multi:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: setup prebuild environment
+      - name: Setup Prebuild Environment
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
           password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
 
-      - name: prebuild and publish image
+      - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ghcr.io/${{ github.repository }}/devcontainer
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi
           configFile: .devcontainer/source/devcontainer.json
-          push: always
+          push: ${{ env.PUSH || 'always' }}
           platforms: ${{ steps.setup.outputs.platforms }}
 ```
 
@@ -78,40 +66,40 @@ jobs:
 If more control is needed for one or more of the steps, the action supports disabling that step entirely by setting the `setup-*` inputs to `false`.
 
 ```yaml
-name: build with custom buildx
-on:
-  push:
-    branches:
-      - main
-
 jobs:
-  build:
+  advanced:
     runs-on: ubuntu-latest
     steps:
-      - name: checkout
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: setup prebuild environment
+      - name: Setup Prebuild Environment
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
           password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           setup-buildx: false
+          setup-qemu: false
 
-      - name: setup buildx
+      - name: Setup QEMU (Manually without cache)
+        uses: docker/setup-qemu-action@v3
+        with:
+          cache-image: false
+          platforms: ${{ steps.setup.outputs.platforms }}
+
+      - name: Setup Buildx (Manually with debug)
         uses: docker/setup-buildx-action@v3
         with:
           buildkitd-flags: --debug
-          driver-opts: image=moby/buildkit:v0.11.0
           platforms: ${{ steps.setup.outputs.platforms }}
 
-      - name: prebuild and publish image
+      - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ghcr.io/${{ github.repository }}/devcontainer
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/advanced
           configFile: .devcontainer/source/devcontainer.json
-          push: always
+          push: ${{ env.PUSH || 'always' }}
           platforms: ${{ steps.setup.outputs.platforms }}
 ```
 

@@ -1,0 +1,69 @@
+name: Lint
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  constants:
+    name: Check Golang Platform Constants
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        constant:
+          - KNOWN_ARCH
+          - KNOWN_OS
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Constant '${{ matrix.constant }}'
+        env:
+          CONSTANT: ${{ matrix.constant }}
+        run: |
+          printf "::group::%s\n" "Check Constant '$CONSTANT'"
+          ./.github/scripts/check-golang-constant.sh "$CONSTANT"
+          printf "::endgroup::\n"
+
+  examples:
+    name: Check README.md Examples
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        example:
+          - simple
+          - multi
+          - advanced
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check Example '${{ matrix.example }}'
+        env:
+          ACTUAL_FILE: README.md
+          EXPECTED_FILE: .github/workflows/ci-examples.yml
+          JOB_NAME: ${{ matrix.example }}
+        run: |
+          printf "::group::%s\n" "Check Example '$JOB_NAME'"
+          ./.github/scripts/check-readme-example.sh "$ACTUAL_FILE" "$EXPECTED_FILE" "$JOB_NAME"
+          printf "::endgroup::\n"
+
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Shellcheck
+        uses: ludeeus/action-shellcheck@master
+        env:
+          SHELLCHECK_OPTS: -s sh -P src

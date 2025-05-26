@@ -4,8 +4,8 @@ set -e
 # shellcheck disable=SC1007
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 
-# shellcheck source=./database.sh
-. "$SELF_DIR/database.sh"
+# shellcheck source=src/database.sh
+. "$SELF_DIR/../../src/database.sh"
 
 # immediately exit with an exit code and message
 # usage: fatal <exit-code> <message>
@@ -29,6 +29,10 @@ read_keys() {
 	_map="$(printf "%s" "$1" | awk "/^var $2 =/{f=1; next}/^}$/{f=0} f")"
 	printf "%s" "$_map" | grep -E "$3,?$" | cut -d'"' -f2 | sort -u | xargs
 }
+
+if [ -z "$1" ]; then
+	fatal 1 "usage: $0 <constant>"
+fi
 
 CONSTANT="$1"
 VAR_NAME=""
