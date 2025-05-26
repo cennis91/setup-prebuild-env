@@ -5,7 +5,7 @@ on:
       - main
     paths:
       - .devcontainer/**
-      - .github/workflows/prebuild.yml
+      - .github/workflows/ci-prebuild.yml
 
 env:
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}

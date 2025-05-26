@@ -1,15 +1,15 @@
-name: Run Examples
+name: Test README.md Examples
 on:
   pull_request:
     branches:
       - main
     paths:
-      - .github/workflows/examples.yml
+      - .github/workflows/ci-examples.yml
   push:
     branches:
       - main
     paths:
-      - .github/workflows/examples.yml
+      - .github/workflows/ci-examples.yml
 
 # NOTE: These environment variables are NOT considered part of the examples.
 # They are only used to help cut down on building and pushing duplicate images.

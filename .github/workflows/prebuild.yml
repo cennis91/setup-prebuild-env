@@ -1,10 +1,14 @@
-name: (Custom) Prebuild and Publish Dev Container
+name: (Custom) Prebuild Dev Container
 on:
   workflow_dispatch:
     inputs:
       platforms:
         description: Comma-separated list of OCI platforms to build for
         required: false
+      push:
+        description: Whether to push the image to the registry
+        required: false
+        default: 'true'
       registry:
         description: Container registry to publish to
         required: false
@@ -24,6 +28,7 @@ on:
 env:
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
   PLATFORMS: ${{ inputs.platforms || vars.PREBUILD_PLATFORMS || 'linux/amd64,linux/arm64' }}
+  PUSH: ${{ inputs.push == 'true' && 'always' || 'never' }}
   REGISTRY: ${{ inputs.registry || vars.PREBUILD_REGISTRY || 'ghcr.io' }}
   REPOSITORY: ${{ inputs.repository || vars.PREBUILD_REPOSITORY || github.repository }}
   TAG: ${{ inputs.tag || vars.PREBUILD_TAG || 'latest' }}
@@ -60,5 +65,5 @@ jobs:
           imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
           imageTag: ${{ env.TAG }}
           configFile: .devcontainer/source/devcontainer.json
-          eventFilterForPush: workflow_dispatch
+          push: ${{ env.PUSH }}
           platform: ${{ steps.setup.outputs.platforms }}
