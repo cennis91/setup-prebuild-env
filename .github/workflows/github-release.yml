@@ -56,19 +56,27 @@ jobs:
           VERSION: ${{ env.VERSION }}
         run: |
           printf "::group::%s\n" "Validate Version Format"
+          trim() {
+              _trim=${1#"${1%%[![:space:]]*}"}
+              _trim=${_trim%"${_trim##*[![:space:]]}"}
+              printf '%s\n' "$_trim"
+          }
+
+          VERSION=$(trim "$VERSION")
           if ! echo "$VERSION" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+$'; then
               printf "Invalid semver version format: %s\n" "$VERSION" 1>&2
               exit 1
           fi
 
-          SEMVER="${VERSION#v}"
+          SEMVER="$(trim "${VERSION#v}")"
           IFS="." read -r major minor patch <<-END
               $SEMVER
           END
+
           {
-              printf 'MAJOR_TAG=%s\n' "v${major}"
-              printf 'MINOR_TAG=%s\n' "v${major}.${minor}"
-              printf 'RELEASE_TAG=%s\n' "v${SEMVER}"
+              printf 'MAJOR_TAG=%s\n' "v$(trim "$major")"
+              printf 'MINOR_TAG=%s\n' "v$(trim "$major").$(trim "$minor")"
+              printf 'RELEASE_TAG=%s\n' "v$(trim "$major").$(trim "$minor").$(trim "$patch")"
           } | tee -a "$GITHUB_OUTPUT"
           printf "::endgroup::\n"
 
