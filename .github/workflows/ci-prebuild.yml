@@ -43,7 +43,7 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           REPOSITORY: ${{ env.REPOSITORY }}
         with:
-          imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
+          imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/devcontainer
           imageTag: latest
           configFile: .devcontainer/source/devcontainer.json
           push: ${{ env.PUSH }}

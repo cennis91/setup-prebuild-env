@@ -11,7 +11,7 @@
     },
     "customizations": {
         "devpod": {
-            "prebuildRepository": "ghcr.io/cennis91/setup-prebuild-env:latest"
+            "prebuildRepository": "ghcr.io/cennis91/setup-prebuild-env/devcontainer:latest"
         },
         "jetbrains": {
             "plugins": [
