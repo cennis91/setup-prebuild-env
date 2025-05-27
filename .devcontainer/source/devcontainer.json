@@ -4,8 +4,9 @@
     "name": "cennis91/setup-prebuild-env (source)",
     "image": "mcr.microsoft.com/devcontainers/base:bookworm",
     "features": {
-        "ghcr.io/devcontainers/features/node:1": {},
+        "ghcr.io/devcontainers-extra/features/actionlint:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
+        "ghcr.io/devcontainers/features/node:1": {},
         "ghcr.io/EliiseS/devcontainer-features/devcontainers-cli:1": {},
         "ghcr.io/marcozac/devcontainer-features/shellcheck:1": {}
     },

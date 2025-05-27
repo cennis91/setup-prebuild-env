@@ -8,6 +8,19 @@ on:
       - main
 
 jobs:
+  actionlint:
+    name: Actionlint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Actionlint
+        uses: docker://rhysd/actionlint:latest
+        with:
+          args:
+            -color
+
   examples:
     name: Check README.md Examples
     runs-on: ubuntu-latest

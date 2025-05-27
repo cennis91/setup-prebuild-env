@@ -24,6 +24,9 @@ on:
         description: Container image tag to publish with
         required: false
         default: latest
+      username:
+        description: Username to use for the container registry
+        required: false
 
 env:
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
