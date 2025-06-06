@@ -2,7 +2,7 @@ name: Setup Dev Container Pre-Building Environment
 description: Composite action to simplify pre-building Dev Container images
 author: CEnnis91
 branding:
-  color: blue
+  color: red
   icon: box
 
 inputs:
