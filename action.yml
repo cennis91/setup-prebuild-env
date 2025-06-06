@@ -106,7 +106,7 @@ runs:
     - name: Validate OCI platform specifiers
       id: platforms
       shell: bash
-      working-directory: ./src
+      working-directory: ${{ github.action_path }}/src
       env:
         INPUT_PLATFORMS: ${{ inputs.platforms }}
       run: |
@@ -129,7 +129,7 @@ runs:
       if: inputs.setup-skopeo == 'true'
       id: skopeo
       shell: bash
-      working-directory: ./src
+      working-directory: ${{ github.action_path }}/src
       env:
         INPUT_CACHE: ${{ inputs.cache }}
         INPUT_SKOPEO_URL: ${{ inputs.skopeo-url }}
