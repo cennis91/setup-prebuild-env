@@ -29,6 +29,7 @@ jobs:
       - name: Setup Prebuild Environment
         uses: cennis91/setup-prebuild-env@v1
         with:
+          password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
       - name: Prebuild and Publish Image
@@ -59,6 +60,7 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
+          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
@@ -91,6 +93,7 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
+          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
           setup-buildx: false
