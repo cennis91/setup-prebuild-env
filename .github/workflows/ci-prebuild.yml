@@ -13,7 +13,7 @@ env:
   PUSH: ${{ vars.PREBUILD_PUSH || 'filter' }}
   REGISTRY: ${{ vars.PREBUILD_REGISTRY || 'ghcr.io' }}
   REPOSITORY: ${{ vars.PREBUILD_REPOSITORY || github.repository }}
-  USERNAME: ${{ vars.PREBUILD_USERNAME || github.repository_owner }}
+  USERNAME: ${{ vars.PREBUILD_USERNAME || github.actor }}
 
 jobs:
   prebuild:
@@ -45,7 +45,6 @@ jobs:
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}/devcontainer
           imageTag: latest
-          configFile: .devcontainer/source/devcontainer.json
           push: ${{ env.PUSH }}
           refFilterForPush: refs/heads/main
           eventFilterForPush: push

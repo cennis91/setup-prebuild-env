@@ -28,9 +28,9 @@ jobs:
     strategy:
       matrix:
         example:
-          - simple
-          - multi
-          - advanced
+          - quick-start
+          - multi-platform
+          - custom-steps
 
     steps:
       - name: Checkout

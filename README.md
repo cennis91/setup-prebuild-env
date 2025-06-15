@@ -1,21 +1,27 @@
-# setup-prebuild-env
+# Setup Dev Container Prebuild Environment
 
-A composite action to prepare a runner for [prebuilding](https://containers.dev/guide/prebuild) and publishing [Dev Container images](https://containers.dev/) via [devcontainers/ci](https://github.com/devcontainers/ci).
+A composite action to prepare runners for [prebuilding](https://containers.dev/guide/prebuild) and publishing [Dev Container images](https://containers.dev/) via [devcontainers/ci](https://github.com/devcontainers/ci).
 
 ## Usage
 
-### Simple prebuild
+### Quick start
 
-The following workflow is the simplest example for using this action. Using the action's default settings, any time a commit is pushed to the `main` branch, the action will:
+The following is a simple, minimal workflow to quickly get started with this action. You may copy this directly into your workflow. When the job is triggered, the action will:
+
 - Log in to the GitHub container registry.
-- Prepare the necessary tools to build a Dev Container image.
+- Prepare the tools needed to build and publish images.
 - Build a single CPU architecture Dev Container image.
-- Publish the image to the GitHub container registry.
+- Publish the image to the container registry.
 
 ```yaml
 jobs:
-  simple:
+  quick-start:
+    name: Publish a Prebuilt Dev Container Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -23,14 +29,12 @@ jobs:
       - name: Setup Prebuild Environment
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/simple
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/quick-start
           push: ${{ env.PUSH || 'always' }}
 ```
 
@@ -40,8 +44,13 @@ The [devcontainers/ci](https://github.com/devcontainers/ci) action supports buil
 
 ```yaml
 jobs:
-  multi:
+  multi-platform:
+    name: Publish a Prebuilt Multi-Platform Dev Container Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -50,27 +59,30 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi-platform
           push: ${{ env.PUSH || 'always' }}
           platform: ${{ steps.setup.outputs.platforms }}
 ```
 
-### Advanced configuration
+### Fine-tuned control
 
-If more control is needed for one or more of the steps, the action supports disabling that step entirely by setting the `setup-*` inputs to `false`.
+If more control is needed for one or more of the steps, the action supports disabling that step entirely by setting the corresponding `setup-*` input to `false`. If you do not need to customize a step, you should leave it enabled.
 
 ```yaml
 jobs:
-  advanced:
+  custom-steps:
+    name: Publish a Prebuilt Dev Container Image with Custom Steps
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -79,7 +91,6 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
           setup-buildx: false
@@ -100,8 +111,7 @@ jobs:
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/advanced
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/custom-steps
           push: ${{ env.PUSH || 'always' }}
           platform: ${{ steps.setup.outputs.platforms }}
 ```
@@ -115,10 +125,10 @@ See [action.yml](action.yml) for more information.
 | Name | Type | Description | Default |
 |------|------|-------------|---------|
 | `cache` | bool | Cache downloaded dependencies to cache backend | `true` |
-| `password` | string | Password or token for authenticating to the container registry | |
+| `password` | string | Password or token for authenticating to the container registry | `secrets.GITHUB_TOKEN` |
 | `platforms` | string | Comma-separated list of platforms to build for | |
 | `registry` | string | Server address of the container registry | `ghcr.io` |
-| `username` | string | Username for authenticating to the container registry | |
+| `username` | string | Username for authenticating to the container registry | `github.actor` |
 | | | |
 | `setup-buildx` | bool | Setup Docker using [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action) | `true` |
 | `setup-login` | bool | Setup login to container registry using [docker/login-action](https://github.com/docker/login-action) | `true` |
@@ -148,6 +158,22 @@ See [action.yml](action.yml) for more information.
 | `skopeo-cache-hit` | bool | Boolean value to indicate a cache was found for Skopeo packages |
 | `skopeo-package-version` | string | The Skopeo package name and version that was installed |
 
+## Compatibility
+
+This action was written with the goal of being compatible with GitHub Actions and as many GitHub Actions compatible self-hosted runners out of the box as possible.
+
+| Status | Runner |
+|--------|--------|
+|   ✅   | GitHub-hosted runners |
+|   ✅   | Self-hosted GitHub runners |
+|   ✅   | [Gitea act_runner](https://docs.gitea.com/usage/actions/act-runner) |
+|   ✅   | [nektos/act](https://nektosact.com/) |
+|   ✅   | [ChristopherHX/github-act-runner](ChristopherHX/github-act-runner) |
+
+## Contributing
+
+See the [Contribution guidelines](CONTRIBUTING.md) for more information.
+
 ## License
 
-[Apache-2.0](LICENSE)
+This action is licensed under the [Apache-2.0 license](LICENSE).

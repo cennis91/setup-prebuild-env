@@ -67,6 +67,5 @@ jobs:
         with:
           imageName: ${{ env.REGISTRY }}/${{ env.REPOSITORY }}
           imageTag: ${{ env.TAG }}
-          configFile: .devcontainer/source/devcontainer.json
           push: ${{ env.PUSH }}
           platform: ${{ steps.setup.outputs.platforms }}

@@ -4,7 +4,7 @@ set -e
 # shellcheck disable=SC1007
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 
-# shellcheck source=./database.sh
+# shellcheck source=src/database.sh
 . "$SELF_DIR/database.sh"
 
 # determine the running operating system id

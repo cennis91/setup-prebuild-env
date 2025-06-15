@@ -1,5 +1,5 @@
-name: Setup Dev Container Pre-Building Environment
-description: Composite action to simplify pre-building Dev Container images
+name: Setup Dev Container Prebuild Environment
+description: Simplify prebuilding devcontainer images (composite action)
 author: CEnnis91
 branding:
   color: red
@@ -121,8 +121,8 @@ runs:
       uses: docker/login-action@v3
       with:
         registry: ${{ inputs.registry }}
-        username: ${{ inputs.username || github.repository_owner }}
-        password: ${{ inputs.password }}
+        username: ${{ inputs.username || github.actor }}
+        password: ${{ inputs.password || secrets.GITHUB_TOKEN }}
 
     # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
     - name: Setup Skopeo

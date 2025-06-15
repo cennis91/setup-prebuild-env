@@ -18,8 +18,13 @@ env:
   REGISTRY: ${{ vars.EXAMPLES_REGISTRY || 'ghcr.io' }}
 
 jobs:
-  simple:
+  quick-start:
+    name: Publish a Prebuilt Dev Container Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,18 +32,21 @@ jobs:
       - name: Setup Prebuild Environment
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/simple
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/quick-start
           push: ${{ env.PUSH || 'always' }}
 
-  multi:
+  multi-platform:
+    name: Publish a Prebuilt Multi-Platform Dev Container Image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,20 +55,23 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
 
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/multi-platform
           push: ${{ env.PUSH || 'always' }}
           platform: ${{ steps.setup.outputs.platforms }}
 
-  advanced:
+  custom-steps:
+    name: Publish a Prebuilt Dev Container Image with Custom Steps
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,7 +80,6 @@ jobs:
         id: setup
         uses: cennis91/setup-prebuild-env@v1
         with:
-          password: ${{ secrets.GITHUB_TOKEN }}
           platforms: linux/amd64,linux/arm64
           registry: ${{ env.REGISTRY || 'ghcr.io' }}
           setup-buildx: false
@@ -90,7 +100,6 @@ jobs:
       - name: Prebuild and Publish Image
         uses: devcontainers/ci@v0.3
         with:
-          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/advanced
-          configFile: .devcontainer/source/devcontainer.json
+          imageName: ${{ env.REGISTRY || 'ghcr.io' }}/${{ github.repository }}/custom-steps
           push: ${{ env.PUSH || 'always' }}
           platform: ${{ steps.setup.outputs.platforms }}
