@@ -35,7 +35,7 @@ env:
   REGISTRY: ${{ inputs.registry || vars.PREBUILD_REGISTRY || 'ghcr.io' }}
   REPOSITORY: ${{ inputs.repository || vars.PREBUILD_REPOSITORY || github.repository }}
   TAG: ${{ inputs.tag || vars.PREBUILD_TAG || 'latest' }}
-  USERNAME: ${{ inputs.username || vars.PREBUILD_USERNAME || github.repository_owner }}
+  USERNAME: ${{ inputs.username || vars.PREBUILD_USERNAME || github.actor }}
 
 jobs:
   custom-prebuild:
