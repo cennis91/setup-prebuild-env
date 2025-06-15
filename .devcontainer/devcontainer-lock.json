@@ -5,6 +5,11 @@
       "resolved": "ghcr.io/devcontainers-extra/features/actionlint@sha256:6a3dde90cb31e366892f8f2ebb766d73d7293d6e79ed9ac4041014d31599fdda",
       "integrity": "sha256:6a3dde90cb31e366892f8f2ebb766d73d7293d6e79ed9ac4041014d31599fdda"
     },
+    "ghcr.io/devcontainers-extra/features/devcontainers-cli:1": {
+      "version": "1.0.1",
+      "resolved": "ghcr.io/devcontainers-extra/features/devcontainers-cli@sha256:855f5c6a10d1d1353fc3127216171653527f2dadaa50bee3ef4c55a261e19749",
+      "integrity": "sha256:855f5c6a10d1d1353fc3127216171653527f2dadaa50bee3ef4c55a261e19749"
+    },
     "ghcr.io/devcontainers-extra/features/gh-release:1": {
       "version": "1.0.26",
       "resolved": "ghcr.io/devcontainers-extra/features/gh-release@sha256:09be4373c696a6a457dad170233c76934ae250edfda0e126f8617fcb41bdd418",
@@ -19,11 +24,6 @@
       "version": "1.6.3",
       "resolved": "ghcr.io/devcontainers/features/node@sha256:3c35dff2aedeaeb86f03e10c265c29b56a1b3609324d83d6e901dbb6032543a4",
       "integrity": "sha256:3c35dff2aedeaeb86f03e10c265c29b56a1b3609324d83d6e901dbb6032543a4"
-    },
-    "ghcr.io/EliiseS/devcontainer-features/devcontainers-cli:1": {
-      "version": "1.0.0",
-      "resolved": "ghcr.io/eliises/devcontainer-features/devcontainers-cli@sha256:a4e321fcd89ea7fe6b1eea98e98f5ccc47d4be525fcfa4299cccf2c6aafefa21",
-      "integrity": "sha256:a4e321fcd89ea7fe6b1eea98e98f5ccc47d4be525fcfa4299cccf2c6aafefa21"
     }
   }
 }

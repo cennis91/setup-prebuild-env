@@ -128,7 +128,7 @@ See [action.yml](action.yml) for more information.
 | Name | Type | Description | Default |
 |------|------|-------------|---------|
 | `cache` | bool | Cache downloaded dependencies to cache backend | `true` |
-| `password` | string | Password or token for authenticating to the container registry | `secrets.GITHUB_TOKEN` |
+| `password` | string | Password or token for authenticating to the container registry | |
 | `platforms` | string | Comma-separated list of platforms to build for | |
 | `registry` | string | Server address of the container registry | `ghcr.io` |
 | `username` | string | Username for authenticating to the container registry | `github.actor` |
