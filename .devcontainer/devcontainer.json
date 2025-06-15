@@ -88,7 +88,7 @@
                             }
                         },
                         {
-                            "label": "devcontainer upgrade",
+                            "label": "Update devcontainer lockfile",
                             "command": "devcontainer",
                             "args": [
                                 "upgrade",
@@ -98,22 +98,6 @@
                             "group": {
                                 "kind": "build"
                             },
-                            "hide": true,
-                            "presentation": {
-                                "close": true,
-                                "echo": false
-                            }
-                        },
-                        {
-                            "label": "Update devcontainer lockfile",
-                            "type": "shell",
-                            "command": "echo '' >> ${workspaceFolder}/.devcontainer/devcontainer-lock.json",
-                            "group": {
-                                "kind": "build"
-                            },
-                            "dependsOn": [
-                                "devcontainer upgrade"
-                            ],
                             "presentation": {
                                 "close": true,
                                 "echo": false
