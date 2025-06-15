@@ -6,6 +6,8 @@ on:
     paths:
       - .devcontainer/**
       - .github/workflows/ci-prebuild.yml
+      - action.yml
+      - src/**
 
 env:
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
