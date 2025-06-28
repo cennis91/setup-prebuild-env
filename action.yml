@@ -47,7 +47,7 @@ inputs:
   skopeo-minimum:
     description: Minimum version of Skopeo needed
     required: false
-    default: '1.4.1'
+    default: '1.9.0'  # needed for multi-arch builds
   skopeo-url:
     description: Repository URL of the Skopeo package to install
     required: false
