@@ -169,12 +169,10 @@ This action was written with the goal of being compatible with GitHub Actions an
 | Status | Runner |
 |--------|--------|
 |   ✅   | GitHub-hosted runners |
-|   ✅   | Self-hosted GitHub runners[^1] |
+|   ✅   | Self-hosted GitHub runners |
 |   ✅   | [Gitea act_runner](https://docs.gitea.com/usage/actions/act-runner) |
 |   ✅   | [nektos/act](https://nektosact.com/) |
 |   ✅   | [ChristopherHX/github-act-runner](https://github.com/ChristopherHX/github-act-runner) |
-
-[^1]: Note: GitHub Actions self-hosted runners are not officially supported by GitHub.
 
 ## Contributing
 
