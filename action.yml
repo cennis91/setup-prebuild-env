@@ -44,10 +44,14 @@ inputs:
     default: 'true'
 
   # skopeo installation configuration
-  skopeo-url:
-    description: URL of the Skopeo package to install
+  skopeo-minimum:
+    description: Minimum version of Skopeo needed
     required: false
-    default: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04'
+    default: '1.4.1'
+  skopeo-url:
+    description: Repository URL of the Skopeo package to install
+    required: false
+    default: ''
 
   # docker/setup-buildx-action
   buildx-version:
@@ -98,7 +102,7 @@ outputs:
     value: ${{ steps.skopeo-cache.outputs.cache-hit || false }}
   skopeo-package-version:
     description: The Skopeo package name and version that was installed
-    value: ${{ steps.skopeo.outputs.version || '' }}
+    value: ${{ steps.skopeo.outputs.version || steps.skopeo-cache.outputs.package-version-list || '' }}
 
 runs:
   using: composite
@@ -131,16 +135,20 @@ runs:
       shell: bash
       working-directory: ${{ github.action_path }}/src
       env:
+        # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
+        GOOD_APT_REPO_URL: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04'
         INPUT_CACHE: ${{ inputs.cache }}
+        INPUT_SKOPEO_MINIMUM: ${{ inputs.skopeo-minimum }}
         INPUT_SKOPEO_URL: ${{ inputs.skopeo-url }}
       run: |
         echo "::group::Setup Skopeo"
-        ./action.sh skopeo
+        ./action.sh skopeo-check
+        ./action.sh skopeo-version | tee -a "$GITHUB_OUTPUT"
         echo "::endgroup::"
 
     # https://github.com/awalsh128/cache-apt-pkgs-action
     - name: Cache Skopeo packages
-      if: inputs.setup-skopeo == 'true' && inputs.cache == 'true'
+      if: steps.skopeo.outputs.needs-skopeo == 'true' && inputs.cache == 'true'
       id: skopeo-cache
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:

@@ -138,7 +138,8 @@ See [action.yml](action.yml) for more information.
 | `setup-qemu` | bool | Setup QEMU via [docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) for cross-platform builds | `true` |
 | `setup-skopeo` | bool | Setup Skopeo by installing the Skopeo package | `true` |
 | | | |
-| `skopeo-url` | string | URL of the Skopeo package to install | [More info](https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769) |
+| `skopeo-minimum` | string | Minimum version of Skopeo needed | `1.4.1` |
+| `skopeo-url` | string | Repository URL of the Skopeo package to install | [More info](https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769) |
 | `buildx-version` | string | Version of Buildx to install | |
 | `qemu-image` | string | QEMU static binaries Docker image | |
 
@@ -168,10 +169,12 @@ This action was written with the goal of being compatible with GitHub Actions an
 | Status | Runner |
 |--------|--------|
 |   ✅   | GitHub-hosted runners |
-|   ✅   | Self-hosted GitHub runners |
+|   ✅   | Self-hosted GitHub runners[^1] |
 |   ✅   | [Gitea act_runner](https://docs.gitea.com/usage/actions/act-runner) |
 |   ✅   | [nektos/act](https://nektosact.com/) |
-|   ✅   | [ChristopherHX/github-act-runner](ChristopherHX/github-act-runner) |
+|   ✅   | [ChristopherHX/github-act-runner](https://github.com/ChristopherHX/github-act-runner) |
+
+[^1]: Note: GitHub Actions self-hosted runners are not officially supported by GitHub.
 
 ## Contributing
 
