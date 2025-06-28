@@ -4,17 +4,12 @@
     "name": "cennis91/setup-prebuild-env",
     "build": {
         "dockerfile": "Dockerfile",
-        "context": ".",
-        "cacheFrom": "ghcr.io/cennis91/setup-prebuild-env/devcontainer:latest"
+        "context": "."
     },
     "features": {
         "ghcr.io/devcontainers-extra/features/actionlint:1": {},
         "ghcr.io/devcontainers-extra/features/devcontainers-cli:1": {},
-        "ghcr.io/devcontainers-extra/features/gh-release:1": {
-            "repo": "koalaman/shellcheck",
-            "binaryNames": "shellcheck",
-            "version": "latest"
-        },
+        "ghcr.io/devcontainers-extra/features/shellcheck:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
         "ghcr.io/devcontainers/features/node:1": {}
     },
@@ -48,81 +43,7 @@
                     "*.{yml,yaml}": "github-actions-workflow"
                 },
                 "shellcheck.useWorkspaceRootAsCwd": true,
-                "redhat.telemetry.enabled": false,
-                "tasks": {
-                    "version": "2.0.0",
-                    "problemMatcher": [],
-                    "tasks": [
-                        {
-                            "label": "Check Golang Constant",
-                            "command": "${workspaceFolder}/.github/scripts/check-golang-constant.sh",
-                            "args": [
-                                "${input:golangConstant}"
-                            ],
-                            "group": {
-                                "kind": "test"
-                            },
-                            "isBackground": true,
-                            "presentation": {
-                                "close": true,
-                                "reveal": "silent",
-                                "revealProblems": "onProblem"
-                            }
-                        },
-                        {
-                            "label": "Check README.md Example",
-                            "command": "${workspaceFolder}/.github/scripts/check-readme-example.sh",
-                            "args": [
-                                "README.md",
-                                ".github/workflows/ci-examples.yml",
-                                "${input:exampleJob}"
-                            ],
-                            "group": {
-                                "kind": "test"
-                            },
-                            "isBackground": true,
-                            "presentation": {
-                                "close": true,
-                                "reveal": "silent",
-                                "revealProblems": "onProblem"
-                            }
-                        },
-                        {
-                            "label": "Update devcontainer lockfile",
-                            "command": "devcontainer",
-                            "args": [
-                                "upgrade",
-                                "--workspace-folder",
-                                "${workspaceFolder}"
-                            ],
-                            "group": {
-                                "kind": "build"
-                            },
-                            "presentation": {
-                                "close": true,
-                                "echo": false
-                            }
-                        }
-                    ],
-                    "inputs": [
-                        {
-                            "id": "exampleJob",
-                            "type": "promptString",
-                            "description": "Name of the example job to compare",
-                            "default": "quick-start"
-                        },
-                        {
-                            "id": "golangConstant",
-                            "type": "pickString",
-                            "description": "Name of the golang constant to check",
-                            "options": [
-                                "KNOWN_ARCH",
-                                "KNOWN_OS"
-                            ],
-                            "default": "KNOWN_ARCH"
-                        }
-                    ]
-                }
+                "redhat.telemetry.enabled": false
             }
         }
     }

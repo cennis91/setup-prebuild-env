@@ -1,0 +1,6 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// source at: .devcontainer/source/devcontainer.json
+{
+    "name": "cennis91/setup-prebuild-env (prebuild)",
+    "image": "ghcr.io/cennis91/setup-prebuild-env/devcontainer:latest"
+}
