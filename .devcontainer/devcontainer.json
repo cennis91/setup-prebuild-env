@@ -1,7 +1,7 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/images/tree/main/src/base-debian
 {
-    "name": "cennis91/setup-prebuild-env",
+    "name": "cennis91/setup-prebuild-env (source)",
     "build": {
         "dockerfile": "Dockerfile",
         "context": "."
