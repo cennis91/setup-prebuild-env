@@ -181,7 +181,7 @@ runs:
     # https://github.com/actions/setup-node
     # use 'setup-node: false' if more configuration is desired
     - name: Setup Node.js
-      if: inputs.setup-node == 'true' && steps.validate.outputs.node-updated == 'false'
+      if: inputs.setup-node == 'true' && (steps.validate.outputs.node-updated == 'false' || steps.validate.outputs.npm-present == 'false')
       id: node
       uses: actions/setup-node@v4
       with:
