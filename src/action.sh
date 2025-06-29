@@ -173,9 +173,11 @@ step_version() {
 		*)			fatal 1 "unsupported package: $_package" ;;
 	esac
 
-	_to_int() { trim "$1" | sed 's/[^0-9]//g'; }
-	_present="false"; _updated="false"
+	# HACK: not real semver checking, but should be good enough
+	_clean() { split "." "$1" | tr -cd '0-9.\n'; }
+	_to_int() { for p in $(_clean "$1"); do printf "%03d" "$p"; done; }
 
+	_present="false"; _updated="false"
 	if [ "$(_to_int "$_version")" -ne "0" ]; then
 		_present="true"
 		if [ "$(_to_int "$_version")" -ge "$(_to_int "$_minimum")" ]; then
