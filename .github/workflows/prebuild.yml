@@ -4,30 +4,30 @@ on:
     inputs:
       runs-on:
         type: string
-        description: Type of machine to run the workflow on
+        description: Workflow runner machine type
         required: false
         default: ubuntu-latest
       platforms:
         type: string
-        description: Comma-separated list of OCI platforms to build for
+        description: Comma-separated OCI build platforms
         required: false
         default: linux/amd64,linux/arm64
       registry:
         type: string
-        description: Container registry to publish to
+        description: Container registry server
         required: false
         default: ghcr.io
       username:
         type: string
-        description: Username to use for the container registry
+        description: Container registry username
         required: false
       repository:
         type: string
-        description: Image repository to publish to and name
+        description: Registry repository name
         required: false
       tag:
         type: string
-        description: Container image tag to publish with
+        description: Container image tag
         required: false
         default: latest
       push:
