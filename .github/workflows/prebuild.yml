@@ -2,36 +2,50 @@ name: (Custom) Prebuild Dev Container
 on:
   workflow_dispatch:
     inputs:
-      platforms:
-        description: Comma-separated list of OCI platforms to build for
-        required: false
-      push:
-        description: Whether to push the image to the registry
-        required: false
-        default: 'true'
-      registry:
-        description: Container registry to publish to
-        required: false
-        default: ghcr.io
-      repository:
-        description: Image repository to publish to and name
-        required: false
       runs-on:
+        type: string
         description: Type of machine to run the workflow on
         required: false
         default: ubuntu-latest
+      platforms:
+        type: string
+        description: Comma-separated list of OCI platforms to build for
+        required: false
+        default: linux/amd64,linux/arm64
+      registry:
+        type: string
+        description: Container registry to publish to
+        required: false
+        default: ghcr.io
+      username:
+        type: string
+        description: Username to use for the container registry
+        required: false
+      repository:
+        type: string
+        description: Image repository to publish to and name
+        required: false
       tag:
+        type: string
         description: Container image tag to publish with
         required: false
         default: latest
-      username:
-        description: Username to use for the container registry
+      push:
+        type: boolean
+        description: Whether to push the image to the registry
         required: false
+        default: true
+      cache:
+        type: boolean
+        description: Whether to cache the image in the registry
+        required: false
+        default: true
 
 env:
+  CACHE: ${{ inputs.cache && 'true' || 'false' }}
   PASSWORD: ${{ secrets.PREBUILD_PASSWORD || secrets.GITHUB_TOKEN }}
   PLATFORMS: ${{ inputs.platforms || vars.PREBUILD_PLATFORMS || 'linux/amd64,linux/arm64' }}
-  PUSH: ${{ inputs.push == 'true' && 'always' || 'never' }}
+  PUSH: ${{ inputs.push && 'always' || 'never' }}
   REGISTRY: ${{ inputs.registry || vars.PREBUILD_REGISTRY || 'ghcr.io' }}
   REPOSITORY: ${{ inputs.repository || vars.PREBUILD_REPOSITORY || github.repository }}
   TAG: ${{ inputs.tag || vars.PREBUILD_TAG || 'latest' }}
@@ -53,6 +67,7 @@ jobs:
         id: setup
         uses: ./
         with:
+          cache: ${{ env.CACHE }}
           password: ${{ env.PASSWORD }}
           platforms: ${{ env.PLATFORMS }}
           registry: ${{ env.REGISTRY }}
