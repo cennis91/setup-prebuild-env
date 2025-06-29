@@ -65,7 +65,7 @@ inputs:
   node-version:
     description: Version of Node.js to install via actions/setup-node
     required: false
-    default: 'lts'
+    default: 'current'
 
   # docker/setup-qemu-action
   qemu-image:
