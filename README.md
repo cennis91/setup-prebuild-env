@@ -135,11 +135,14 @@ See [action.yml](action.yml) for more information.
 | | | |
 | `setup-buildx` | bool | Setup Docker using [docker/setup-buildx-action](https://github.com/docker/setup-buildx-action) | `true` |
 | `setup-login` | bool | Setup login to container registry using [docker/login-action](https://github.com/docker/login-action) | `true` |
+| `setup-node` | bool | Setup Node.js via [actions/setup-node](https://github.com/actions/setup-node) | `true` |
 | `setup-qemu` | bool | Setup QEMU via [docker/setup-qemu-action](https://github.com/docker/setup-qemu-action) for cross-platform builds | `true` |
 | `setup-skopeo` | bool | Setup Skopeo by installing the Skopeo package | `true` |
 | | | |
-| `skopeo-minimum` | string | Minimum version of Skopeo needed | `1.4.1` |
+| `skopeo-minimum` | string | Minimum version of Skopeo needed | `1.9.0` |
 | `skopeo-url` | string | Repository URL of the Skopeo package to install | [More info](https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769) |
+| `node-minimum` | string | Minimum version of Node.js needed to run devcontainer/cli | `18.0.0` |
+| `node-version` | string | Version of Node.js to install via [actions/setup-node](https://github.com/actions/setup-node) | `lts` |
 | `buildx-version` | string | Version of Buildx to install | |
 | `qemu-image` | string | QEMU static binaries Docker image | |
 
@@ -156,6 +159,8 @@ See [action.yml](action.yml) for more information.
 | `buildx-name` | string | Docker Buildx builder name |
 | `buildx-nodes` | string | Docker Buildx builder nodes metadata |
 | `buildx-platforms` | string | Docker Buildx builder node platforms (preferred and/or available) |
+| | | |
+| `node-version` | string | Installed Node.js version |
 | | | |
 | `qemu-platforms` | string | QEMU available platforms (comma separated) |
 | | | |

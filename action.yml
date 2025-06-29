@@ -34,6 +34,10 @@ inputs:
     description: Setup login to container registry using docker/login-action
     required: false
     default: 'true'
+  setup-node:
+    description: Setup Node.js via actions/setup-node
+    required: false
+    default: 'true'
   setup-qemu:
     description: Setup QEMU via docker/setup-qemu-action for cross-platform builds
     required: false
@@ -43,39 +47,49 @@ inputs:
     required: false
     default: 'true'
 
-  # skopeo installation configuration
+  # skopeo installation config
   skopeo-minimum:
     description: Minimum version of Skopeo needed
     required: false
-    default: '1.9.0'  # needed for multi-arch builds
+    default: '1.9.0'  # 1.4.1 if single-arch builds are needed
   skopeo-url:
     description: Repository URL of the Skopeo package to install
     required: false
     default: ''
 
-  # docker/setup-buildx-action
-  buildx-version:
-    description: Version of Buildx to install
+  # node installation config and actions/setup-node
+  node-minimum:
+    description: Minimum version of Node.js needed to run devcontainer/cli
     required: false
+    default: '18.0.0' # from devcontainers/cli package.json
+  node-version:
+    description: Version of Node.js to install via actions/setup-node
+    required: false
+    default: 'lts'
 
   # docker/setup-qemu-action
   qemu-image:
     description: QEMU static binaries Docker image
     required: false
 
+  # docker/setup-buildx-action
+  buildx-version:
+    description: Version of Buildx to install
+    required: false
+
 outputs:
   needs-cross:
     description: Boolean value to indicate cross-platform builds are needed
-    value: ${{ steps.platforms.outputs.NEEDS_CROSS }}
+    value: ${{ steps.validate.outputs.needs-cross }}
   platforms:
     description: Comma-separated list of all OCI platform specifiers to build
-    value: ${{ steps.platforms.outputs.PLATFORMS_ALL }}
+    value: ${{ steps.validate.outputs.platforms-all }}
   platforms-cross:
     description: Comma-separated list of non-native OCI platform specifiers to build
-    value: ${{ steps.platforms.outputs.PLATFORMS_CROSS }}
+    value: ${{ steps.validate.outputs.platforms-cross }}
   platforms-native:
     description: Comma-separated list of native OCI platform specifiers to build
-    value: ${{ steps.platforms.outputs.PLATFORMS_NATIVE }}
+    value: ${{ steps.validate.outputs.platforms-native }}
 
   # docker/setup-buildx-action
   buildx-driver:
@@ -91,6 +105,11 @@ outputs:
     description: Docker Buildx builder node platforms (preferred and/or available)
     value: ${{ steps.buildx.outputs.platforms || '' }}
 
+  # actions/setup-node
+  node-version:
+    description: Installed Node.js version
+    value: ${{ steps.node.outputs.node-version || '' }}
+
   # docker/setup-qemu-action
   qemu-platforms:
     description: QEMU available platforms (comma separated)
@@ -102,19 +121,22 @@ outputs:
     value: ${{ steps.skopeo-cache.outputs.cache-hit || false }}
   skopeo-package-version:
     description: The Skopeo package name and version that was installed
-    value: ${{ steps.skopeo.outputs.version || steps.skopeo-cache.outputs.package-version-list || '' }}
+    value: ${{ steps.skopeo-cache.outputs.package-version-list || steps.skopeo.outputs.skopeo-version || '' }}
 
 runs:
   using: composite
   steps:
-    - name: Validate OCI platform specifiers
-      id: platforms
+    - name: Validate system and OCI platform inputs
+      id: validate
       shell: bash
       working-directory: ${{ github.action_path }}/src
       env:
+        INPUT_NODE_MIN: ${{ inputs.node-minimum }}
         INPUT_PLATFORMS: ${{ inputs.platforms }}
+        INPUT_SKOPEO_MIN: ${{ inputs.skopeo-minimum }}
       run: |
-        echo "::group::Validate OCI platform specifiers"
+        echo "::group::Validate system and OCI platform inputs"
+        ./action.sh dependencies | tee -a "$GITHUB_OUTPUT"
         ./action.sh platforms | tee -a "$GITHUB_OUTPUT"
         echo "::endgroup::"
 
@@ -129,41 +151,52 @@ runs:
         password: ${{ inputs.password }}
 
     # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
+    # use 'setup-skopeo: false' if more configuration is desired
     - name: Setup Skopeo
-      if: inputs.setup-skopeo == 'true'
+      if: inputs.setup-skopeo == 'true' && steps.validate.outputs.skopeo-updated == 'false'
       id: skopeo
       shell: bash
       working-directory: ${{ github.action_path }}/src
       env:
         # https://github.com/devcontainers/ci/issues/191#issuecomment-1532014769
-        GOOD_APT_REPO_URL: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04'
+        ENV_GOOD_REPO_URL: 'https://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/unstable/xUbuntu_22.04'
         INPUT_CACHE: ${{ inputs.cache }}
-        INPUT_SKOPEO_MINIMUM: ${{ inputs.skopeo-minimum }}
         INPUT_SKOPEO_URL: ${{ inputs.skopeo-url }}
       run: |
         echo "::group::Setup Skopeo"
-        ./action.sh skopeo-check
-        ./action.sh skopeo-version | tee -a "$GITHUB_OUTPUT"
+        ./action.sh skopeo
+        ./action.sh version "skopeo" | tee -a "$GITHUB_OUTPUT"
         echo "::endgroup::"
 
     # https://github.com/awalsh128/cache-apt-pkgs-action
+    # cache the skopeo package even if it is not managed
     - name: Cache Skopeo packages
-      if: steps.skopeo.outputs.needs-skopeo == 'true' && inputs.cache == 'true'
+      if: inputs.cache == 'true' && steps.validate.outputs.skopeo-updated == 'false'
       id: skopeo-cache
       uses: awalsh128/cache-apt-pkgs-action@latest
       with:
         packages: skopeo
         version: 1.0
 
+    # https://github.com/actions/setup-node
+    # use 'setup-node: false' if more configuration is desired
+    - name: Setup Node.js
+      if: inputs.setup-node == 'true' && steps.validate.outputs.node-updated == 'false'
+      id: node
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+
     # https://github.com/docker/setup-qemu-action
+    # use 'setup-qemu: false' if more configuration is desired
     - name: Setup QEMU for cross-platform building
-      if: inputs.setup-qemu == 'true' && steps.platforms.outputs.NEEDS_CROSS == 'true'
+      if: inputs.setup-qemu == 'true' && steps.validate.outputs.needs-cross == 'true'
       id: qemu
       uses: docker/setup-qemu-action@v3
       with:
         image: ${{ inputs.qemu-image }}
         cache-image: ${{ inputs.cache }}
-        platforms: ${{ steps.platforms.outputs.PLATFORMS_CROSS }}
+        platforms: ${{ steps.validate.outputs.platforms-cross }}
 
     # https://github.com/docker/setup-buildx-action
     # use 'setup-buildx: false' if more configuration is desired
@@ -173,5 +206,5 @@ runs:
       uses: docker/setup-buildx-action@v3
       with:
         version: ${{ inputs.buildx-version }}
-        platforms: ${{ steps.platforms.outputs.PLATFORMS_ALL }}
+        platforms: ${{ steps.validate.outputs.platforms-all }}
         cache-binary: ${{ inputs.cache }}

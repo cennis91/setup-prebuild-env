@@ -4,31 +4,64 @@ set -e
 # shellcheck disable=SC1007
 SELF_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd -P)"
 
+# shellcheck source=src/shared.sh
+. "$SELF_DIR/shared.sh"
+
 # shellcheck source=src/database.sh
 . "$SELF_DIR/database.sh"
 
-# determine the running operating system id
+# determines the running operating system id
 # usage: detect_os
 detect_os() {
 	_os="$(to_lower "$(uname -s)")"
-
-	_detect_linux() {
-		. /etc/os-release
-		printf "%s" "$ID"
-	}
-
 	case "$_os" in
-		linux)	_detect_linux ;;
+		linux)	{ . /etc/os-release; printf "%s" "$ID";	} ;;
 		*)		printf "%s" "$_os" ;;
 	esac
 }
 
-# immediately exit with an exit code and message
-# usage: fatal <exit-code> <message>
-fatal() {
-	printf "%s\n" "$2" 1>&2
-	# shellcheck disable=SC2086
-	exit $1
+# manages a package from the system package manager
+# usage: manage_package <action> <package> [args...]
+manage_package() {
+	_action="$1"
+	_package="$2"
+	shift; shift
+
+	_apt() {
+		_action="$1"
+		_package="$2"
+		shift; shift
+
+		_configure() {
+			_package="$1"
+			_repo_url="${2:-${ENV_GOOD_REPO_URL}}"
+			shift; shift
+
+			_list="/etc/apt/sources.list.d/${_package}.list"
+			_gpg="/etc/apt/trusted.gpg.d/${_package}.gpg"
+
+			if [ -n "$_repo_url" ]; then
+				sudo sh -c "echo 'deb ${_repo_url}/ /' > ${_list}"
+				curl -fsSL "${_repo_url}/Release.key" \
+					| gpg --dearmor \
+					| sudo tee "${_gpg}" > /dev/null
+			fi
+			sudo apt-get update "$@"
+		}
+
+		export DEBIAN_FRONTEND=noninteractive
+		case "$_action" in
+			configure)		_configure "$_package" "$@" ;;
+			install|remove)	sudo apt-get "$_action" "$_package" -y "$@" ;;
+			*)				fatal 1 "unsupported apt action: $_action" ;;
+		esac
+	}
+
+	# TODO: support other operating systems?
+	case "$(detect_os)" in
+		debian|ubuntu)	_apt "$_action" "$_package" "$@" ;;
+		*)				fatal 1 "unsupported operating system: $(detect_os)" ;;
+	esac
 }
 
 # normalizes an OCI platform specifier like containerd
@@ -55,49 +88,21 @@ normalize_platform() {
 	printf "%s" "$_platform"
 }
 
-# installs (or prepares to install) skopeo from the package manager
-# usage: skopeo_install [repo-url] [install]
-skopeo_install() {
-	_repo_url="$1"
-	_use_cache="${2:-true}"
+# checks the system for critical packages and their versions
+# usage: step_dependencies <node-minimum> <skopeo-minimum>
+step_dependencies() {
+	_node_minimum="$1"
+	_skopeo_minimum="$2"
 
-	_apt_install() {
-		_repo_url="${1:-${GOOD_APT_REPO_URL}}"
-		_use_cache="$2"
-
-		# https://github.com/devcontainers/ci/issues/191#issuecomment-1416384710
-		if [ -n "$_repo_url" ]; then
-			_skopeo_list="/etc/apt/sources.list.d/skopeo.list"
-			_skopeo_gpg="/etc/apt/trusted.gpg.d/skopeo.gpg"
-
-			sudo sh -c "echo 'deb ${_repo_url}/ /' > ${_skopeo_list}"
-			curl -fsSL "${_repo_url}/Release.key" \
-				| gpg --dearmor \
-				| sudo tee "${_skopeo_gpg}" > /dev/null
+	for _non_posix in curl gpg sudo; do
+		if ! check_package "$_non_posix"; then
+			fatal 1 "missing required package: $_non_posix"
 		fi
+	done
 
-		export DEBIAN_FRONTEND=noninteractive
-		sudo apt-get update
-		if [ "$_use_cache" = "false" ]; then
-			sudo apt-get install -y skopeo
-		fi
-	}
-
-	# TODO: support other operating systems
-	_os="$(detect_os)"
-	case "$_os" in
-		debian|ubuntu)	_apt_install "$_repo_url" "$_use_cache" ;;
-		*)				fatal 1 "unsupported operating system: $_os" ;;
-	esac
-}
-
-# splits a string into multiline by a separator
-# usage: split <separator> <string>
-# shellcheck disable=2086
-split() {
-	set -f;	_ifs=$IFS; IFS=$1
-	set -- $2; printf '%s\n' "$@"
-	IFS=$_ifs; set +f
+	step_version "node" "$_node_minimum"
+	step_version "npm" "0"
+	step_version "skopeo" "$_skopeo_minimum"
 }
 
 # normalizes a comma separated list of OCI platform specifiers
@@ -105,9 +110,7 @@ split() {
 step_platforms() {
 	_platforms="$1"
 
-	_all=""
-	_cross=""
-	_native=""
+	_all=""; _cross="";	_native=""
 	_needs_cross="false"
 
 	# detect the native platform
@@ -127,60 +130,70 @@ step_platforms() {
 		fi
 	done
 
-	printf "PLATFORMS_SELF=%s\n" "$_self_platform"
-	printf "NEEDS_CROSS=%s\n" "$_needs_cross"
+	printf "platforms-self=%s\n" "$_self_platform"
+	printf "needs-cross=%s\n" "$_needs_cross"
 
 	_format() { printf "%s" "$(trim "$1")" | sort -u | xargs | tr " " ","; }
-	printf "PLATFORMS_ALL=%s\n" "$(_format "$_all")"
-	printf "PLATFORMS_CROSS=%s\n" "$(_format "$_cross")"
-	printf "PLATFORMS_NATIVE=%s\n" "$(_format "$_native")"
+	printf "platforms-all=%s\n" "$(_format "$_all")"
+	printf "platforms-cross=%s\n" "$(_format "$_cross")"
+	printf "platforms-native=%s\n" "$(_format "$_native")"
 }
 
-# determines if skopeo needs to be installed or updated
-# usage: step_skopeo <minimum> [repo-url] [use-cache] [retry]
+# ensures skopeo is installed or prepared for installation
+# usage: step_skopeo [repo-url] [use-cache]
 step_skopeo() {
-	_minimum="$1"
-	_repo_url="$2"
-	_use_cache="${3:-true}"
-	_retry="${4:-1}"
+	_repo_url="$1"
+	_use_cache="${2:-true}"
 
-	_needs_skopeo="true"
-	_version="0"
+	IFS="=" read -r _ _present <<-END
+		$(step_version "skopeo" "0" | grep "present")
+	END
 
-	_skopeo_version() { split " " "$(skopeo --version)" | tail -n 1; }
-	_to_int() { trim "$1" | sed 's/\.//g'; }
+	# https://github.com/devcontainers/ci/issues/191#issuecomment-1416384710
+	manage_package "configure" "skopeo" "$_repo_url"
 
-	if command -v skopeo >/dev/null 2>&1; then
-		_version="$(_skopeo_version)"
+	if [ "$_use_cache" = "true" ] && [ "$_present" = "true" ]; then
+		# the cache action step will handle installing skopeo
+		manage_package "remove" "skopeo"
+	elif [ "$_use_cache" = "false" ]; then
+		manage_package "install" "skopeo"
 	fi
+}
 
-	if [ "$(_to_int "$_version")" -ge "$(_to_int "$_minimum")" ]; then
-		_needs_skopeo="false"
-	else
-		if [ "$_retry" -eq 1 ]; then
-			skopeo_install "$_repo_url" "$_use_cache"
-			step_skopeo "$_minimum" "$_repo_url" "$_use_cache" "0"
-			return
+# determines if a package needs to be installed or updated
+# usage: step_version <package> [minimum]
+step_version() {
+	_package="$1"
+	_minimum="${2:-0}"
+
+	case "$_package" in
+		node|npm)	_version="$(check_package "$_package" "--version")" ;;
+		skopeo)		_version="$(check_package "$_package" "--version")"
+					_version="$(split " " "$_version" | tail -n 1)" ;;
+		*)			fatal 1 "unsupported package: $_package" ;;
+	esac
+
+	_to_int() { trim "$1" | sed 's/[^0-9]//g'; }
+	_present="false"; _updated="false"
+
+	if [ "$(_to_int "$_version")" -ne "0" ]; then
+		_present="true"
+		if [ "$(_to_int "$_version")" -ge "$(_to_int "$_minimum")" ]; then
+			_updated="true"
 		fi
 	fi
 
-	# matches awalsh128/cache-apt-pkgs-action
-	printf "version=%s=%s\n" "skopeo" "$_version"
-	printf "needs-skopeo=%s\n" "$_needs_skopeo"
-}
-
-# trims whitespace from the start and end of a string
-# usage: trim <string>
-trim() {
-	_trim=${1#"${1%%[![:space:]]*}"}
-	_trim=${_trim%"${_trim##*[![:space:]]}"}
-	printf '%s\n' "$_trim"
+	# matches awalsh128/cache-apt-pkgs-action format
+	printf "%s-version=%s=%s\n" "$_package" "$_package" "$_version"
+	printf "%s-present=%s\n" "$_package" "$_present"
+	printf "%s-updated=%s\n" "$_package" "$_updated"
 }
 
 STEP_NAME="$1"; shift
 case "$STEP_NAME" in
+	dependencies)	step_dependencies "${INPUT_NODE_MIN:-$1}" "${INPUT_SKOPEO_MIN:-$2}" ;;
 	platforms)		step_platforms "${INPUT_PLATFORMS:-$1}" ;;
-	skopeo-check)	step_skopeo "${INPUT_SKOPEO_MINIMUM:-$1}" "${INPUT_SKOPEO_URL:-$2}" "${INPUT_CACHE:-$3}" ;;
-	skopeo-version)	step_skopeo "${INPUT_SKOPEO_MINIMUM:-$1}" "" "" "0" ;;
-	*)				fatal 1 "unknown step: $STEP_NAME" ;;
+	skopeo)			step_skopeo "${INPUT_SKOPEO_URL:-$1}" "${INPUT_CACHE:-$2}" ;;
+	version)		step_version "${INPUT_PACKAGE:-$1}" "${INPUT_PACKAGE_MIN:-$2}" ;;
+	*)				fatal 1 "unsupported step: $STEP_NAME" ;;
 esac
