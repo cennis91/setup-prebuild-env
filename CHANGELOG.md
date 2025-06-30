@@ -1,6 +1,8 @@
 ## 1.2.0
 
-- Improve handling and compatibility of Skopeo installation.
+- Add support for `setup-node`, when node / npm is not installed.
+- Improve handling of skopeo installation.
+- Add minimum version requirements for skopeo and node.
 
 ## 1.1.0
 
